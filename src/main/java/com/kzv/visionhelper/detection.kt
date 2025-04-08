@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.SystemClock
+import org.json.JSONObject
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -54,12 +55,8 @@ class Detector(
         val model = FileUtil.loadMappedFile(context, modelPath)
         interpreter = Interpreter(model, options)
 
-        labels.add("class1")
-        labels.add("class2")
-        labels.add("class3")
-        labels.add("class4")
-        labels.add("class5")
-        labels.add("class6")
+        loadLabels("en")
+
         labels.forEach(::println)
 
         val inputShape = interpreter.getInputTensor(0)?.shape()
@@ -172,4 +169,13 @@ class Detector(
         private val OUTPUT_IMAGE_TYPE = DataType.FLOAT32
         private const val CONFIDENCE_THRESHOLD = 0.3F
     }
+    fun loadLabels(lang: String = "en") {
+        val jsonStr = context.assets.open("classes.json").bufferedReader().use { it.readText() }
+        val json = JSONObject(jsonStr).getJSONObject(lang)
+        labels.clear()
+        for (i in 0 until json.length()) {
+            labels.add(json.getString(i.toString()))
+        }
+    }
+
 }

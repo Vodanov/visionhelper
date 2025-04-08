@@ -14,6 +14,7 @@ class OverlayView @JvmOverloads constructor(
     private var bounds = Rect()
 
     private val boxPaint = Paint().apply {
+        // default white color
         color = ContextCompat.getColor(context, android.R.color.white)
         strokeWidth = 6F
         style = Paint.Style.STROKE
@@ -50,6 +51,7 @@ class OverlayView @JvmOverloads constructor(
             val right = box.x2 * width
             val bottom = box.y2 * height
 
+            boxPaint.color = getColorForClass(box.cls)
             canvas.drawRoundRect(left, top, right, bottom, 16f, 16f, boxPaint)
 
             val label = "${box.clsName} ${"%.2f".format(box.cnf)}"
@@ -68,6 +70,19 @@ class OverlayView @JvmOverloads constructor(
             canvas.drawText(label, left, top + textHeight, textPaint)
         }
     }
+
+    private fun getColorForClass(clsId: Int): Int {
+        return when (clsId) {
+            0 -> Color.CYAN           // e.g. crosswalk
+            1 -> Color.RED            // e.g. traffic light
+            2 -> Color.YELLOW         // e.g. stop sign
+            3 -> Color.GREEN
+            4 -> Color.MAGENTA
+            5 -> Color.BLUE
+            else -> Color.WHITE       // fallback/default
+        }
+    }
+
 
     companion object {
         private const val BOUNDING_RECT_TEXT_PADDING = 8f

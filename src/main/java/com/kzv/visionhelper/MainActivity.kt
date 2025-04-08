@@ -20,12 +20,16 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
+    var DEBUG_MODE = true
+
+    private var lastFrameAnalyzedTime = 0L
+    private val minAnalysisIntervalMs = 500L // ~3 FPS max
 
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var tfliteHelper: Detector
     private lateinit var overlayView: OverlayView
-
+    private lateinit var feedbackManager: FeedbackManager
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
     private var camera: Camera? = null
@@ -36,10 +40,14 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
 
+        // View
         overlayView = viewBinding.overlay
         setContentView(viewBinding.root)
+
+        feedbackManager = FeedbackManager(this)
 
         if (allPermissionsGranted()) {
             startCamera()
@@ -57,19 +65,25 @@ class MainActivity : AppCompatActivity() {
             applicationContext,
             object : Detector.DetectorListener {
                 override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
-                    Log.d("Detector", "Detected ${boundingBoxes.size} objects in ${inferenceTime}ms")
-                    for (box in boundingBoxes) {
-                        Log.d("Detector", "Label: ${box.clsName}, Confidence: ${box.cnf}")
+                    if (DEBUG_MODE) {
+                        Log.d("Detector", "Detected ${boundingBoxes.size} objects in ${inferenceTime}ms")
+                        for (box in boundingBoxes) {
+                            Log.d("Detector", "Label: ${box.clsName}, Confidence: ${box.cnf}")
+                        }
                     }
+
+                    if (boundingBoxes.isNotEmpty()) {
+                        feedbackManager.playComboFeedback(boundingBoxes.map { it.clsName })
+                    }
+
                     runOnUiThread {
                         overlayView.setResults(boundingBoxes)
                     }
-                    // TODO: draw boxes, trigger sound/vibration, etc.
                 }
 
                 override fun onEmptyDetect() {
                     overlayView.setResults(emptyList())
-                    Log.d("Detector", "No objects detected.")
+                    if (DEBUG_MODE) Log.d("Detector", "No objects detected.")
                 }
             }
         )
@@ -106,6 +120,12 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         imageAnalyzer?.setAnalyzer(cameraExecutor) { imageProxy ->
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastFrameAnalyzedTime < minAnalysisIntervalMs) {
+                    imageProxy.close()
+                    return@setAnalyzer
+                }
+                lastFrameAnalyzedTime = currentTime
             val bitmapBuffer = Bitmap.createBitmap(
                 imageProxy.width,
                 imageProxy.height,
@@ -152,12 +172,17 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private val REQUIRED_PERMISSIONS = mutableListOf(
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.VIBRATE
         ).apply {
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
                 add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
             }
         }.toTypedArray()
+    }
+
+    override fun onResume() {
+        super.onResume()
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
