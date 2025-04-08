@@ -1,25 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-
-    <!-- Base app theme (auto-switches between light and dark based on system setting) -->
     <style name="Theme.VisionHelper" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand colors -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorSecondary">@color/secondary</item>
         <item name="colorOnSecondary">@color/on_secondary</item>
-
-        <!-- Background colors -->
         <item name="android:windowBackground">@color/background</item>
         <item name="colorSurface">@color/background</item>
         <item name="colorOnSurface">@color/colorOnSurface</item>
-        <item name="textInputStyle">@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu</item>
-
-        <!-- Status bar -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimary</item>
-
-        <!-- Shape appearance (optional but nice for Material3 consistency) -->
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Material3.SmallComponent</item>
-    </style>
+        <item name="textInputStyle">@style/Widget.Material3.TextInputLayout.OutlinedBox</item>
 
+    </style>
 </resources>

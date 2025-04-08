@@ -14,7 +14,9 @@ class FeedbackManager(private val context: Context) {
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     private val toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
     private var lastFeedbackTime = 0L
-    private val cooldown = 1500L
+    private val cooldown: Long
+        get() = prefs.getInt("feedback_cooldown", 500).toLong()
+
 
     fun playFeedback(label: String) {
         val now = System.currentTimeMillis()

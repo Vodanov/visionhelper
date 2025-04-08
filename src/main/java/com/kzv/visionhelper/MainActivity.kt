@@ -12,10 +12,12 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.kzv.visionhelper.databinding.ActivityMainBinding
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -23,8 +25,6 @@ class MainActivity : AppCompatActivity() {
     var DEBUG_MODE = true
 
     private var lastFrameAnalyzedTime = 0L
-    private val minAnalysisIntervalMs = 500L // ~3 FPS max
-
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var tfliteHelper: Detector
@@ -35,17 +35,39 @@ class MainActivity : AppCompatActivity() {
     private var camera: Camera? = null
     private var cameraProvider: ProcessCameraProvider? = null
 
-    private val isFrontCamera = false // Set true if you switch to front camera later
+    private val prefs by lazy { getSharedPreferences("vision_settings", MODE_PRIVATE) }
+
+    private val minAnalysisIntervalMs: Long
+        get() {
+            val fps = prefs.getInt("fps_limit", 2).coerceAtLeast(1)
+            return 1000L / fps
+        }
+
+
+
 
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+
+        val prefs = getSharedPreferences("vision_settings", MODE_PRIVATE)
+
+        // Set default language once on first boot
+        if (!prefs.contains("language")) {
+            val systemLang = Locale.getDefault().language
+            val russianFamily = setOf("ru", "uk", "be", "kk", "uz", "ky", "tg", "tk", "az", "hy", "mo")
+            val defaultLang = if (systemLang in russianFamily) "ru" else "en"
+            prefs.edit().putString("language", defaultLang).apply()
+        }
 
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
-
-        // View
         overlayView = viewBinding.overlay
         setContentView(viewBinding.root)
+
+        val modelType = getSharedPreferences("vision_settings", MODE_PRIVATE)
+            .getString("model_type", "float16")
+        val modelName = if (modelType == "float32") "modelHQ.tflite" else "model.tflite"
 
         feedbackManager = FeedbackManager(this)
 
@@ -54,10 +76,17 @@ class MainActivity : AppCompatActivity() {
         } else {
             activityResultLauncher.launch(REQUIRED_PERMISSIONS)
         }
-
+        val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val shouldReload = result.data?.getBooleanExtra("reload_model", false) ?: false
+                if (shouldReload) {
+                    reloadDetector()
+                }
+            }
+        }
         viewBinding.settingsButton.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+            settingsLauncher.launch(intent)
         }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -85,7 +114,8 @@ class MainActivity : AppCompatActivity() {
                     overlayView.setResults(emptyList())
                     if (DEBUG_MODE) Log.d("Detector", "No objects detected.")
                 }
-            }
+            },
+            modelName
         )
     }
 
@@ -135,9 +165,6 @@ class MainActivity : AppCompatActivity() {
 
             val matrix = Matrix().apply {
                 postRotate(imageProxy.imageInfo.rotationDegrees.toFloat())
-                if (isFrontCamera) {
-                    postScale(-1f, 1f)
-                }
             }
 
             val rotatedBitmap = Bitmap.createBitmap(
@@ -182,7 +209,44 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
+
         super.onResume()
+    }
+
+    private fun reloadDetector() {
+        val prefs = getSharedPreferences("vision_settings", MODE_PRIVATE)
+        val modelType = prefs.getString("model_type", "float16")
+        val modelName = if (modelType == "float32") "modelHQ.tflite" else "model.tflite"
+
+        tfliteHelper.close()
+
+        tfliteHelper = Detector(
+            applicationContext,
+            object : Detector.DetectorListener {
+                override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
+                    if (DEBUG_MODE) {
+                        Log.d("Detector", "Detected ${boundingBoxes.size} objects in ${inferenceTime}ms")
+                        for (box in boundingBoxes) {
+                            Log.d("Detector", "Label: ${box.clsName}, Confidence: ${box.cnf}")
+                        }
+                    }
+
+                    if (boundingBoxes.isNotEmpty()) {
+                        feedbackManager.playComboFeedback(boundingBoxes.map { it.clsName })
+                    }
+
+                    runOnUiThread {
+                        overlayView.setResults(boundingBoxes)
+                    }
+                }
+
+                override fun onEmptyDetect() {
+                    overlayView.setResults(emptyList())
+                    if (DEBUG_MODE) Log.d("Detector", "No objects detected.")
+                }
+            },
+            modelName
+        )
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

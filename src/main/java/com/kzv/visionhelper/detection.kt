@@ -33,10 +33,10 @@ data class DetectionResult(
 class Detector(
     private val context: Context,
     private val detectorListener: DetectorListener,
+    private var modelPath: String
 ) {
     private var interpreter: Interpreter
     private var labels = mutableListOf<String>()
-    private val modelPath = "model.tflite"
     private var tensorWidth = 0
     private var tensorHeight = 0
     private var numChannel = 0
@@ -53,7 +53,9 @@ class Detector(
         }
 
         val model = FileUtil.loadMappedFile(context, modelPath)
-        interpreter = Interpreter(model, options)
+        interpreter = Interpreter(model, Interpreter.Options().apply {
+            setNumThreads(4)
+        })
 
         loadLabels("en")
 
@@ -77,6 +79,13 @@ class Detector(
             numElements = outputShape[1]
             numChannel = outputShape[2]
         }
+    }
+    fun reloadModel(newModelPath: String) {
+        interpreter.close()
+        val model = FileUtil.loadMappedFile(context, newModelPath)
+        interpreter = Interpreter(model, Interpreter.Options().apply {
+            setNumThreads(4)
+        })
     }
 
     fun restart(isGpu: Boolean) {
@@ -162,13 +171,6 @@ class Detector(
         fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long)
     }
 
-    companion object {
-        private const val INPUT_MEAN = 0f
-        private const val INPUT_STANDARD_DEVIATION = 255f
-        private val INPUT_IMAGE_TYPE = DataType.FLOAT32
-        private val OUTPUT_IMAGE_TYPE = DataType.FLOAT32
-        private const val CONFIDENCE_THRESHOLD = 0.3F
-    }
     fun loadLabels(lang: String = "en") {
         val jsonStr = context.assets.open("classes.json").bufferedReader().use { it.readText() }
         val json = JSONObject(jsonStr).getJSONObject(lang)
@@ -177,5 +179,14 @@ class Detector(
             labels.add(json.getString(i.toString()))
         }
     }
+
+    companion object {
+        private const val INPUT_MEAN = 0f
+        private const val INPUT_STANDARD_DEVIATION = 255f
+        private val INPUT_IMAGE_TYPE = DataType.FLOAT32
+        private val OUTPUT_IMAGE_TYPE = DataType.FLOAT32
+        private const val CONFIDENCE_THRESHOLD = 0.3F
+    }
+
 
 }

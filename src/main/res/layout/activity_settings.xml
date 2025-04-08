@@ -1,110 +1,151 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="?android:attr/windowBackground"
+    android:layout_margin="16dp"
+    android:background="?attr/colorSurface"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="4dp"
     tools:context=".SettingsActivity">
 
-    <!-- Back Button (top-left corner) -->
-
-    <!-- Main settings content -->
-
-    <ImageButton
-        android:id="@+id/button_back"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="14dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:padding="8dp"
-        android:src="@drawable/returnkey"
-         />
-
-    <ScrollView
-        android:id="@+id/scroll_area"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/button_back"
-        android:padding="24dp">
+        android:layout_height="match_parent">
 
-        <LinearLayout
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/button_back"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="14dp"
+            android:src="@drawable/returnkey"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/back" />
+
+        <ScrollView
+            android:id="@+id/scroll_area"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:divider="?android:attr/dividerVertical"
-            android:showDividers="middle"
-            android:dividerPadding="8dp">
+            android:layout_height="match_parent"
+            android:layout_below="@id/button_back"
+            android:padding="24dp">
 
-            <!-- Title -->
-            <TextView
-                android:id="@+id/settings_title"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Settings"
-                android:textAlignment="center"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="24dp" />
+                android:orientation="vertical"
+                android:showDividers="middle"
+                android:divider="?attr/dividerVertical"
+                android:dividerPadding="8dp">
 
-            <!-- Sound switch -->
-            <Switch
-                android:id="@+id/switch_sound"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Enable sound feedback"
-                android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/settings_title"
+                    style="@style/TextAppearance.MaterialComponents.Headline5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Settings"
+                    android:textAlignment="center"
+                    android:layout_marginBottom="24dp" />
 
-            <!-- Vibration switch -->
-            <Switch
-                android:id="@+id/switch_vibration"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Enable vibration feedback"
-                android:textSize="18sp"
-                android:layout_marginBottom="8dp" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switch_sound"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enable sound feedback" />
 
-            <TextView
-                android:id="@+id/model_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Select model quality"
-                android:textSize="18sp" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/switch_vibration"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enable vibration feedback" />
 
-            <Spinner
-                android:id="@+id/model_spinner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" />
-            <!-- Language label -->
-            <TextView
-                android:id="@+id/language_label"
-                android:layout_width="160dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Select language"
-                android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/model_label"
+                    android:text="Select model quality"
+                    style="@style/TextAppearance.MaterialComponents.Body1"
+                    android:layout_marginTop="24dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
 
-            <!-- Language spinner -->
-            <Spinner
-                android:id="@+id/language_spinner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" />
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
-            <!-- Apply button (big & centered) -->
-            <Button
-                android:id="@+id/button_apply"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Apply Settings"
-                android:textSize="18sp"
-                android:padding="12dp"
-                android:layout_marginTop="32dp" />
-        </LinearLayout>
-    </ScrollView>
-</RelativeLayout>
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/model_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:importantForAccessibility="no"
+                        android:popupBackground="@color/on_primary" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <TextView
+                    android:id="@+id/language_label"
+                    android:text="Select language"
+                    style="@style/TextAppearance.MaterialComponents.Body1"
+                    android:layout_marginTop="24dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/language_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:importantForAccessibility="no"
+                        android:popupBackground="@color/on_primary" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_apply"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Apply Settings"
+                    android:layout_marginTop="32dp" />
+
+                <TextView
+                    android:id="@+id/fps_label"
+                    android:text="Detection FPS Limit"
+                    android:layout_marginTop="24dp"
+                    style="@style/TextAppearance.MaterialComponents.Body1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/seek_fps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="1"
+                    android:valueTo="10"
+                    android:stepSize="1"
+                    android:value="2" />
+
+                <TextView
+                    android:id="@+id/cooldown_label"
+                    android:text="Feedback Cooldown (ms)"
+                    android:layout_marginTop="24dp"
+                    style="@style/TextAppearance.MaterialComponents.Body1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/seek_cooldown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:valueFrom="100"
+                    android:valueTo="2000"
+                    android:stepSize="100"
+                    android:value="500" />
+            </LinearLayout>
+        </ScrollView>
+    </RelativeLayout>
+</com.google.android.material.card.MaterialCardView>
