@@ -9,7 +9,10 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.kzv.visionhelper"
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
+        applicationId = "com.kzv.streetSight"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -20,7 +23,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -48,12 +52,12 @@ dependencies {
     implementation ("androidx.preference:preference-ktx:1.2.1")
     implementation("org.tensorflow:tensorflow-lite:2.16.1")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
-    implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
+    //implementation("org.tensorflow:tensorflow-lite-metadata:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-gpu-delegate-plugin:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-gpu-api:2.16.1")
     implementation("org.tensorflow:tensorflow-lite-api:2.16.1")
     implementation("org.tensorflow:tensorflow-lite-gpu:2.16.1")
-    implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.16.1")
+    //implementation("org.tensorflow:tensorflow-lite-select-tf-ops:2.16.1")
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.material)
@@ -61,7 +65,6 @@ dependencies {
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    implementation("androidx.camera:camera-video:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
     implementation("androidx.camera:camera-extensions:$cameraxVersion")
     implementation(libs.androidx.core.ktx)
