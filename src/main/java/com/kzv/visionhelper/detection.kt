@@ -33,10 +33,10 @@ data class DetectionResult(
 class Detector(
     private val context: Context,
     private val detectorListener: DetectorListener,
-    private var modelPath: String
-) {
+    private var modelPath: String,
+    private val labels: List<String> // ← NEW
+){
     private var interpreter: Interpreter
-    private var labels = mutableListOf<String>()
     private var tensorWidth = 0
     private var tensorHeight = 0
     private var numChannel = 0
@@ -56,10 +56,6 @@ class Detector(
         interpreter = Interpreter(model, Interpreter.Options().apply {
             setNumThreads(4)
         })
-
-        loadLabels("en")
-
-        labels.forEach(::println)
 
         val inputShape = interpreter.getInputTensor(0)?.shape()
         val outputShape = interpreter.getOutputTensor(0)?.shape()
@@ -169,15 +165,6 @@ class Detector(
     interface DetectorListener {
         fun onEmptyDetect()
         fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long)
-    }
-
-    fun loadLabels(lang: String = "en") {
-        val jsonStr = context.assets.open("classes.json").bufferedReader().use { it.readText() }
-        val json = JSONObject(jsonStr).getJSONObject(lang)
-        labels.clear()
-        for (i in 0 until json.length()) {
-            labels.add(json.getString(i.toString()))
-        }
     }
 
     companion object {

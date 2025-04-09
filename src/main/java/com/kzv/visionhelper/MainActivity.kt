@@ -1,6 +1,7 @@
 package com.kzv.visionhelper
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -22,8 +23,6 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
-    var DEBUG_MODE = true
-
     private var lastFrameAnalyzedTime = 0L
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
@@ -43,9 +42,6 @@ class MainActivity : AppCompatActivity() {
             return 1000L / fps
         }
 
-
-
-
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +59,11 @@ class MainActivity : AppCompatActivity() {
 
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
         overlayView = viewBinding.overlay
+
+        val language = prefs.getString("language", "en") ?: "en"
+        val localizedLabels = loadLocalizedLabels(this, language)
+        overlayView.setLabels(localizedLabels)
+
         setContentView(viewBinding.root)
 
         val modelType = getSharedPreferences("vision_settings", MODE_PRIVATE)
@@ -94,13 +95,6 @@ class MainActivity : AppCompatActivity() {
             applicationContext,
             object : Detector.DetectorListener {
                 override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
-                    if (DEBUG_MODE) {
-                        Log.d("Detector", "Detected ${boundingBoxes.size} objects in ${inferenceTime}ms")
-                        for (box in boundingBoxes) {
-                            Log.d("Detector", "Label: ${box.clsName}, Confidence: ${box.cnf}")
-                        }
-                    }
-
                     if (boundingBoxes.isNotEmpty()) {
                         feedbackManager.playComboFeedback(boundingBoxes.map { it.clsName })
                     }
@@ -109,13 +103,11 @@ class MainActivity : AppCompatActivity() {
                         overlayView.setResults(boundingBoxes)
                     }
                 }
-
                 override fun onEmptyDetect() {
                     overlayView.setResults(emptyList())
-                    if (DEBUG_MODE) Log.d("Detector", "No objects detected.")
                 }
             },
-            modelName
+            modelName, localizedLabels
         )
     }
 
@@ -213,10 +205,30 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
     }
 
+    private fun loadLocalizedLabels(context: Context, languageCode: String): List<String> {
+        val jsonStr = context.assets.open("labels.json")
+            .bufferedReader()
+            .use { it.readText() }
+
+        val jsonObject = org.json.JSONObject(jsonStr)
+        val localized = jsonObject.getJSONObject(languageCode)
+
+        val result = mutableListOf<String>()
+        for (i in 0..5) {
+            result.add(localized.getString(i.toString()))
+        }
+
+        return result
+    }
+
     private fun reloadDetector() {
         val prefs = getSharedPreferences("vision_settings", MODE_PRIVATE)
         val modelType = prefs.getString("model_type", "float16")
         val modelName = if (modelType == "float32") "modelHQ.tflite" else "model.tflite"
+
+        val language = prefs.getString("language", "en") ?: "en"
+        val localizedLabels = loadLocalizedLabels(this, language)
+        overlayView.setLabels(localizedLabels)
 
         tfliteHelper.close()
 
@@ -224,13 +236,6 @@ class MainActivity : AppCompatActivity() {
             applicationContext,
             object : Detector.DetectorListener {
                 override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
-                    if (DEBUG_MODE) {
-                        Log.d("Detector", "Detected ${boundingBoxes.size} objects in ${inferenceTime}ms")
-                        for (box in boundingBoxes) {
-                            Log.d("Detector", "Label: ${box.clsName}, Confidence: ${box.cnf}")
-                        }
-                    }
-
                     if (boundingBoxes.isNotEmpty()) {
                         feedbackManager.playComboFeedback(boundingBoxes.map { it.clsName })
                     }
@@ -242,10 +247,9 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onEmptyDetect() {
                     overlayView.setResults(emptyList())
-                    if (DEBUG_MODE) Log.d("Detector", "No objects detected.")
                 }
             },
-            modelName
+            modelName, localizedLabels
         )
     }
 

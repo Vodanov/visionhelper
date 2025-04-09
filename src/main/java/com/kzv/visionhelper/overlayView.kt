@@ -13,8 +13,9 @@ class OverlayView @JvmOverloads constructor(
     private var results = listOf<BoundingBox>()
     private var bounds = Rect()
 
+    private var localizedLabels: List<String>? = null
+
     private val boxPaint = Paint().apply {
-        // default white color
         color = ContextCompat.getColor(context, android.R.color.white)
         strokeWidth = 6F
         style = Paint.Style.STROKE
@@ -37,6 +38,10 @@ class OverlayView @JvmOverloads constructor(
         invalidate()
     }
 
+    fun setLabels(labels: List<String>) {
+        localizedLabels = labels
+    }
+
     fun clear() {
         results = listOf()
         invalidate()
@@ -54,7 +59,9 @@ class OverlayView @JvmOverloads constructor(
             boxPaint.color = getColorForClass(box.cls)
             canvas.drawRoundRect(left, top, right, bottom, 16f, 16f, boxPaint)
 
-            val label = "${box.clsName} ${"%.2f".format(box.cnf)}"
+            val labelName = localizedLabels?.getOrNull(box.cls) ?: box.clsName
+            val label = "$labelName ${"%.2f".format(box.cnf)}"
+
             textBackgroundPaint.getTextBounds(label, 0, label.length, bounds)
 
             val textWidth = bounds.width().toFloat()
@@ -73,16 +80,15 @@ class OverlayView @JvmOverloads constructor(
 
     private fun getColorForClass(clsId: Int): Int {
         return when (clsId) {
-            0 -> Color.CYAN           // e.g. crosswalk
-            1 -> Color.RED            // e.g. traffic light
-            2 -> Color.YELLOW         // e.g. stop sign
+            0 -> Color.CYAN
+            1 -> Color.RED
+            2 -> Color.YELLOW
             3 -> Color.GREEN
             4 -> Color.MAGENTA
             5 -> Color.BLUE
-            else -> Color.WHITE       // fallback/default
+            else -> Color.WHITE
         }
     }
-
 
     companion object {
         private const val BOUNDING_RECT_TEXT_PADDING = 8f

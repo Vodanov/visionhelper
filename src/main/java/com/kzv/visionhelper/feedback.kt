@@ -97,6 +97,12 @@ class FeedbackManager(private val context: Context) {
         "Traffic light (green)+Pedestrian crossing+Crossing sign" to FeedbackPattern(longArrayOf(0, 100, 80, 100, 250), ToneGenerator.TONE_SUP_CONGESTION),
         "Green light for car+Crossing sign+Pedestrian crossing" to FeedbackPattern(longArrayOf(0, 100, 80, 200), ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD),
 
+        "Green light for car+Red light for car+Traffic light (green)+Traffic light (red)" to FeedbackPattern(longArrayOf(0, 400, 100, 400, 200), ToneGenerator.TONE_SUP_ERROR),
+        "Pedestrian crossing+Traffic light (red)+Red light for car+Green light for car" to FeedbackPattern(longArrayOf(0, 200, 150, 200, 250), ToneGenerator.TONE_SUP_RADIO_ACK),
+        "Crossing sign+Red light for car+Traffic light (green)+Pedestrian crossing" to FeedbackPattern(longArrayOf(0, 170, 140, 220, 170), ToneGenerator.TONE_CDMA_ALERT_NETWORK_LITE),
+        "Green light for car+Traffic light (red)+Red light for car+Pedestrian crossing" to FeedbackPattern(longArrayOf(0, 250, 150, 150, 250), ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD),
+        "Traffic light (red)+Red light for car+Crossing sign+Pedestrian crossing" to FeedbackPattern(longArrayOf(0, 200, 100, 300, 100), ToneGenerator.TONE_SUP_RADIO_ACK),
+
         // Fallback
         "default" to FeedbackPattern(longArrayOf(0, 150), ToneGenerator.TONE_PROP_BEEP)
     )
