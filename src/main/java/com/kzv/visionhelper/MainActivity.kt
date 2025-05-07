@@ -22,12 +22,14 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+// helper class for all settings
 class MainActivity : AppCompatActivity() {
     private var lastFrameAnalyzedTime = 0L
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var tfliteHelper: Detector
     private lateinit var overlayView: OverlayView
+    private lateinit var settingsActivity: SettingsActivity
     private lateinit var feedbackManager: FeedbackManager
     private var preview: Preview? = null
     private var imageAnalyzer: ImageAnalysis? = null
@@ -60,15 +62,15 @@ class MainActivity : AppCompatActivity() {
         viewBinding = ActivityMainBinding.inflate(layoutInflater)
         overlayView = viewBinding.overlay
 
-        val language = prefs.getString("language", "en") ?: "en"
-        val localizedLabels = loadLocalizedLabels(this, language)
-        overlayView.setLabels(localizedLabels)
+        val currentLang = prefs.getString("language", "en") ?: "en"
+        LocalizationManager.load(this, currentLang)
+        overlayView.setLabels(LocalizationManager.labels)
 
         setContentView(viewBinding.root)
 
         val modelType = getSharedPreferences("vision_settings", MODE_PRIVATE)
             .getString("model_type", "float16")
-        val modelName = if (modelType == "float32") "modelHQ.tflite" else "model.tflite"
+        val modelName = if (modelType == "float16") "model.tflite" else "modelHQ.tflite"
 
         feedbackManager = FeedbackManager(this)
 
@@ -107,7 +109,7 @@ class MainActivity : AppCompatActivity() {
                     overlayView.setResults(emptyList())
                 }
             },
-            modelName, localizedLabels
+            modelName, LocalizationManager.labels, useGpu = true
         )
     }
 
@@ -127,7 +129,8 @@ class MainActivity : AppCompatActivity() {
             .requireLensFacing(CameraSelector.LENS_FACING_BACK)
             .build()
 
-        val rotation = viewBinding.viewFinder.display.rotation
+        val rotation = viewBinding.viewFinder.display?.rotation
+            ?: windowManager.defaultDisplay.rotation
 
         preview = Preview.Builder()
             .setTargetAspectRatio(AspectRatio.RATIO_4_3)
@@ -201,45 +204,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onResume() {
-
         super.onResume()
-    }
-
-    private fun loadLocalizedLabels(context: Context, languageCode: String): List<String> {
-        val jsonStr = context.assets.open("labels.json")
-            .bufferedReader()
-            .use { it.readText() }
-
-        val jsonObject = org.json.JSONObject(jsonStr)
-        val localized = jsonObject.getJSONObject(languageCode)
-
-        val result = mutableListOf<String>()
-        for (i in 0..5) {
-            result.add(localized.getString(i.toString()))
-        }
-
-        return result
     }
 
     private fun reloadDetector() {
         val prefs = getSharedPreferences("vision_settings", MODE_PRIVATE)
         val modelType = prefs.getString("model_type", "float16")
         val modelName = if (modelType == "float32") "modelHQ.tflite" else "model.tflite"
+        val useGpu = (modelType == "float32")
 
-        val language = prefs.getString("language", "en") ?: "en"
-        val localizedLabels = loadLocalizedLabels(this, language)
-        overlayView.setLabels(localizedLabels)
+        val currentLang = prefs.getString("language", "en") ?: "en"
+        LocalizationManager.load(this, currentLang)
 
+        overlayView.setLabels(LocalizationManager.labels)
         tfliteHelper.close()
 
         tfliteHelper = Detector(
-            applicationContext,
-            object : Detector.DetectorListener {
+            context = applicationContext,
+            detectorListener = object : Detector.DetectorListener {
                 override fun onDetect(boundingBoxes: List<BoundingBox>, inferenceTime: Long) {
                     if (boundingBoxes.isNotEmpty()) {
                         feedbackManager.playComboFeedback(boundingBoxes.map { it.clsName })
                     }
-
                     runOnUiThread {
                         overlayView.setResults(boundingBoxes)
                     }
@@ -249,7 +235,9 @@ class MainActivity : AppCompatActivity() {
                     overlayView.setResults(emptyList())
                 }
             },
-            modelName, localizedLabels
+            modelPath = modelName,
+            labels = LocalizationManager.labels,
+            useGpu = useGpu
         )
     }
 

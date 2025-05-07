@@ -2,9 +2,7 @@ package com.kzv.visionhelper
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.RectF
 import android.os.SystemClock
-import org.json.JSONObject
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -25,16 +23,12 @@ data class BoundingBox(
     val cls: Int,
     val clsName: String
 )
-data class DetectionResult(
-    val boundingBox: RectF,
-    val confidence: Float,
-    val label: String
-)
 class Detector(
     private val context: Context,
     private val detectorListener: DetectorListener,
     private var modelPath: String,
-    private val labels: List<String> // ← NEW
+    private val labels: List<String>,
+    private val useGpu: Boolean = false
 ){
     private var interpreter: Interpreter
     private var tensorWidth = 0
@@ -48,8 +42,20 @@ class Detector(
         .build()
 
     init {
-        val options = Interpreter.Options().apply{
-            this.setNumThreads(4)
+        val options = if (useGpu) {
+            val compatList = CompatibilityList()
+            Interpreter.Options().apply {
+                if (compatList.isDelegateSupportedOnThisDevice) {
+                    val delegateOptions = compatList.bestOptionsForThisDevice
+                    addDelegate(GpuDelegate(delegateOptions))
+                } else {
+                    setNumThreads(4)
+                }
+            }
+        } else {
+            Interpreter.Options().apply {
+                setNumThreads(4)
+            }
         }
 
         val model = FileUtil.loadMappedFile(context, modelPath)
@@ -64,7 +70,6 @@ class Detector(
             tensorWidth = inputShape[1]
             tensorHeight = inputShape[2]
 
-            // If in case input shape is in format of [1, 3, ..., ...]
             if (inputShape[1] == 3) {
                 tensorWidth = inputShape[2]
                 tensorHeight = inputShape[3]
@@ -76,12 +81,27 @@ class Detector(
             numChannel = outputShape[2]
         }
     }
-    fun reloadModel(newModelPath: String) {
+    fun reloadModel(newModelPath: String, useGpu: Boolean = false) {
         interpreter.close()
+
+        val options = if (useGpu) {
+            val compatList = CompatibilityList()
+            Interpreter.Options().apply {
+                if (compatList.isDelegateSupportedOnThisDevice) {
+                    val delegateOptions = compatList.bestOptionsForThisDevice
+                    addDelegate(GpuDelegate(delegateOptions))
+                } else {
+                    setNumThreads(4)
+                }
+            }
+        } else {
+            Interpreter.Options().apply {
+                setNumThreads(4)
+            }
+        }
+
         val model = FileUtil.loadMappedFile(context, newModelPath)
-        interpreter = Interpreter(model, Interpreter.Options().apply {
-            setNumThreads(4)
-        })
+        interpreter = Interpreter(model, options)
     }
 
     fun restart(isGpu: Boolean) {
@@ -110,15 +130,12 @@ class Detector(
     fun close() {
         interpreter.close()
     }
-
+    fun tensor_empty(): Boolean {
+        return tensorHeight != 0 && tensorWidth != 0 && numChannel != 0 && numElements != 0
+    }
     fun detect(frame: Bitmap) {
-        if (tensorWidth == 0
-            || tensorHeight == 0
-            || numChannel == 0
-            || numElements == 0) return
-
+        if (tensor_empty()) return
         var inferenceTime = SystemClock.uptimeMillis()
-
         val resizedBitmap = Bitmap.createScaledBitmap(frame, tensorWidth, tensorHeight, false)
 
         val tensorImage = TensorImage(INPUT_IMAGE_TYPE)
@@ -174,6 +191,4 @@ class Detector(
         private val OUTPUT_IMAGE_TYPE = DataType.FLOAT32
         private const val CONFIDENCE_THRESHOLD = 0.3F
     }
-
-
 }

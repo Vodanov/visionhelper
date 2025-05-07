@@ -19,7 +19,8 @@ class SettingsActivity : AppCompatActivity() {
 
         // Language
         var currentLang = prefs.getString("language", "en") ?: "en"
-        setLocalizedTexts(currentLang)
+        LocalizationManager.load(this, currentLang)
+        setLocalizedTexts(LocalizationManager.settingsNames)
 
         // Model spinner
         val modelList = listOf("HQ (F32)", "LQ (F16)")
@@ -27,7 +28,7 @@ class SettingsActivity : AppCompatActivity() {
         val modelAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, modelList)
         binding.modelSpinner.setAdapter(modelAdapter)
 
-        val savedModelType = prefs.getString("model_type", "float16") ?: "float16"
+        val savedModelType = prefs.getString("model_type", "float32") ?: "float32"
         val index = modelCodes.indexOf(savedModelType)
         if (index != -1) {
             binding.modelSpinner.setText(modelList[index], false)
@@ -71,8 +72,8 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         // Language Spinner setup
-        val languageList = listOf("English", "Русский")
-        val languageCodes = listOf("en", "ru")
+        val languageList = LocalizationManager.getLanguageListWithFlags(this)
+        val languageCodes = LocalizationManager.availableLanguages
         val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languageList)
 
         // Set adapter for language spinner
@@ -92,7 +93,8 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putString("language", selectedLang).apply()
 
             if (selectedLang != currentLang) {
-                setLocalizedTexts(selectedLang) // Update the UI with localized texts
+                LocalizationManager.load(this, selectedLang)
+                setLocalizedTexts(LocalizationManager.settingsNames)
             }
         }
 
@@ -107,25 +109,14 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun setLocalizedTexts(selectedLang: String) {
-        if (selectedLang == "ru") {
-            binding.settingsTitle.text = "Настройки"
-            binding.switchSound.text = "Звуковое оповещение"
-            binding.switchVibration.text = "Виброотклик"
-            binding.languageLabel.text = "Выбор языка"
-            binding.modelLabel.text = "Качество модели"
-            binding.fpsLabel.text = "Ограничение FPS обнаружения"
-            binding.cooldownLabel.text = "Задержка между оповещениями (мс)"
-            binding.buttonApply.text = "Применить"
-        } else {
-            binding.settingsTitle.text = "Settings"
-            binding.switchSound.text = "Enable sound feedback"
-            binding.switchVibration.text = "Enable vibration feedback"
-            binding.languageLabel.text = "Select language"
-            binding.modelLabel.text = "Model quality"
-            binding.fpsLabel.text = "Detection FPS Limit"
-            binding.cooldownLabel.text = "Feedback Cooldown (ms)"
-            binding.buttonApply.text = "Apply"
-        }
+    private fun setLocalizedTexts(localized: List<String>) {
+        binding.settingsTitle.text = localized[0]
+        binding.switchSound.text = localized[1]
+        binding.switchVibration.text = localized[2]
+        binding.languageLabel.text = localized[3]
+        binding.modelLabel.text = localized[4]
+        binding.fpsLabel.text = localized[5]
+        binding.cooldownLabel.text = localized[6]
+        binding.buttonApply.text = localized[7]
     }
 }
